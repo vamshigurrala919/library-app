@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Library Management System – Project Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:#1e293b;line-height:1.75;padding:40px 60px;max-width:900px;margin:auto;font-size:14px}
+h1{font-size:1.8rem;color:#0f172a;border-bottom:3px solid #6366f1;padding-bottom:10px;margin:30px 0 18px}
+h2{font-size:1.35rem;color:#1e40af;margin:24px 0 12px;border-left:4px solid #6366f1;padding-left:12px}
+h3{font-size:1.1rem;color:#334155;margin:16px 0 8px}
+p{margin:8px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px}
+th{background:#e0e7ff;color:#1e40af;padding:10px 12px;text-align:left;font-weight:600;border:1px solid #c7d2fe}
+td{padding:8px 12px;border:1px solid #e2e8f0}
+tr:nth-child(even){background:#f8fafc}
+pre{background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12.5px;line-height:1.6;margin:10px 0;white-space:pre-wrap;word-wrap:break-word}
+.kw{color:#c084fc}.str{color:#86efac}.ann{color:#fbbf24}.cmt{color:#64748b;font-style:italic}.tp{color:#67e8f9}
+.cover{text-align:center;padding:60px 20px;margin-bottom:30px;border-bottom:2px solid #e2e8f0}
+.cover h1{font-size:2.2rem;border:none;color:#1e40af;margin-bottom:6px}
+.cover p{font-size:1rem;color:#475569}
+.er-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:20px;margin:14px 0}
+.note{background:#fefce8;border-left:4px solid #facc15;padding:12px 16px;border-radius:0 6px 6px 0;margin:12px 0;font-size:13px}
+.badge{display:inline-block;background:#e0e7ff;color:#3730a3;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.screenshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+.screenshot-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center}
+.screenshot-item img{width:100%;height:auto;border-radius:4px;border:1px solid #cbd5e1;margin-bottom:8px}
+.screenshot-item p{font-weight:600;color:#475569;font-size:12px}
+@media print{body{padding:20px 30px;font-size:13px}pre{font-size:11px;padding:10px}h1{page-break-before:always}.cover h1{page-break-before:avoid}.screenshot-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<div class="cover">
+<h1>Library Management System</h1>
+<p><strong>Spring Boot Web Application – Project Report</strong></p>
+<p>Vamshi Gurrala</p>
+<p style="margin-top:10px;font-size:0.9rem;color:#64748b">Built with Spring Boot 3.2 · JPA/Hibernate · JSP · H2 Database</p>
+</div>
+
+<!-- ═══════════ 1. OVERVIEW ═══════════ -->
+<h1>1. Project Overview</h1>
+<p>This project delivers a full-stack web application that tracks books and their respective authors within a digital library catalogue. Rather than relying on a pre-existing template, every layer of the system—from database schema generation through the browser-rendered views—was hand-crafted to satisfy three core functional requirements: <strong>populating</strong> the database with seed data, <strong>creating and reading</strong> entities through web forms, and <strong>updating</strong> existing records while safeguarding data consistency.</p>
+
+<p>The technology stack centres on <strong>Spring Boot 3.2</strong> for dependency injection and auto-configuration, <strong>Spring Data JPA</strong> backed by Hibernate for object-relational mapping, <strong>JSP with JSTL</strong> for server-side view rendering, and an embedded <strong>H2 in-memory database</strong> that keeps setup friction to zero—no external database installation is necessary.</p>
+
+<h2>1.1 Key Capabilities</h2>
+<table>
+<thead><tr><th>Capability</th><th>How It Works in This App</th></tr></thead>
+<tbody>
+<tr><td>Auto-seeding</td><td>A CommandLineRunner inserts 10 authors and 10 books the first time the app boots</td></tr>
+<tr><td>Create via form</td><td>JSP forms with Bean Validation capture new Book / Author records</td></tr>
+<tr><td>Read (listing)</td><td>Inner-join JPQL queries project a DTO that merges Book + Author columns into a single table view</td></tr>
+<tr><td>Update via form</td><td>Pre-populated edit forms let the user modify any field; ISBN uniqueness is re-checked before saving</td></tr>
+<tr><td>Integrity guards</td><td>Duplicate ISBN and duplicate author-name checks throw descriptive exceptions displayed on the form</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════ 2. ER DESIGN ═══════════ -->
+<h1>2. Entity-Relationship Design</h1>
+<p>Two domain objects sit at the heart of the system: <strong>Author</strong> and <strong>Book</strong>. Their association follows a classical <em>one-to-many</em> pattern—a single author may have penned multiple books, yet every book traces back to exactly one author.</p>
+
+<div class="er-box">
+<h3>Author (parent side)</h3>
+<table>
+<tr><th>Column</th><th>Type</th><th>Constraints</th></tr>
+<tr><td>id</td><td>BIGINT (PK)</td><td>Auto-generated via IDENTITY strategy</td></tr>
+<tr><td>name</td><td>VARCHAR(100)</td><td>Not blank, 2–100 chars</td></tr>
+<tr><td>nationality</td><td>VARCHAR(100)</td><td>Not blank</td></tr>
+<tr><td>birth_year</td><td>INTEGER</td><td>Optional</td></tr>
+<tr><td>bio</td><td>VARCHAR(500)</td><td>Optional short biography</td></tr>
+</table>
+
+<h3 style="margin-top:18px">Book (child side)</h3>
+<table>
+<tr><th>Column</th><th>Type</th><th>Constraints</th></tr>
+<tr><td>id</td><td>BIGINT (PK)</td><td>Auto-generated</td></tr>
+<tr><td>title</td><td>VARCHAR(200)</td><td>Not blank, 1–200 chars</td></tr>
+<tr><td>isbn</td><td>VARCHAR(20)</td><td>Unique constraint (uk_books_isbn)</td></tr>
+<tr><td>published_year</td><td>INTEGER</td><td>Between 1000 and 2100</td></tr>
+<tr><td>genre</td><td>VARCHAR(50)</td><td>Not blank</td></tr>
+<tr><td>price</td><td>DOUBLE</td><td>Must be ≥ 0</td></tr>
+<tr><td>author_id</td><td>BIGINT (FK)</td><td>References authors.id, not null</td></tr>
+</table>
+</div>
+
+<p>On the Java side, <code>Author</code> holds a <code>List&lt;Book&gt;</code> annotated with <code>@OneToMany(mappedBy = "author", cascade = CascadeType.ALL)</code>, while <code>Book</code> carries a <code>@ManyToOne(fetch = FetchType.LAZY)</code> reference back to its parent. Cascading ensures that when an author record is removed, all associated books are cleaned up automatically.</p>
+
+<h3>ER Diagram</h3>
+<pre>
+┌──────────────────────┐          ┌──────────────────────────┐
+│       AUTHORS        │          │          BOOKS           │
+├──────────────────────┤          ├──────────────────────────┤
+│ id          BIGINT PK│──┐       │ id            BIGINT  PK│
+│ name       VARCHAR   │  │       │ title         VARCHAR    │
+│ nationality VARCHAR  │  │  1..* │ isbn          VARCHAR UQ│
+│ birth_year  INT      │  └───────│ author_id     BIGINT  FK│
+│ bio        VARCHAR   │          │ published_year INT       │
+└──────────────────────┘          │ genre         VARCHAR    │
+                                  │ price         DOUBLE     │
+                                  └──────────────────────────┘
+         One Author  ─────────────────── Many Books
+</pre>
+
+<!-- ═══════════ 3. IMPLEMENTATION ═══════════ -->
+<h1>3. Implementation Details</h1>
+
+<h2>3.1 Populating the Database (Seed Data)</h2>
+<p>Rather than shipping SQL scripts, the application seeds itself through a <code>@Configuration</code> class that exposes a <code>CommandLineRunner</code> bean. On every cold start it checks whether the <code>authors</code> table is empty; if so, it persists ten author objects followed by ten book objects, each linked to one of those authors.</p>
+
+<pre><span class="ann">@Configuration</span>
+<span class="kw">public class</span> <span class="tp">DataInitializer</span> {
+
+    <span class="ann">@Bean</span>
+    <span class="tp">CommandLineRunner</span> initDatabase(<span class="tp">AuthorRepository</span> authorRepo,
+                                    <span class="tp">BookRepository</span> bookRepo) {
+        <span class="kw">return</span> args -> {
+            <span class="kw">if</span> (authorRepo.count() > 0) {
+                log.info(<span class="str">"Database already seeded – skipping."</span>);
+                <span class="kw">return</span>;
+            }
+            <span class="tp">Author</span> orwell = authorRepo.save(
+                <span class="kw">new</span> Author(<span class="str">"George Orwell"</span>, <span class="str">"British"</span>, 1903, <span class="str">"..."</span>));
+            <span class="cmt">// ... 9 more authors ...</span>
+
+            bookRepo.save(<span class="kw">new</span> Book(<span class="str">"Nineteen Eighty-Four"</span>,
+                <span class="str">"978-0-452-28423-4"</span>, 1949, <span class="str">"Dystopia"</span>, 12.99, orwell));
+            <span class="cmt">// ... 9 more books ...</span>
+        };
+    }
+}</pre>
+
+<div class="note"><strong>Design choice:</strong> The guard clause <code>if (authorRepo.count() > 0) return;</code> prevents duplicate seeding when the app is restarted without clearing the in-memory store—a common scenario during development.</div>
+
+<h2>3.2 Create Operation</h2>
+<p>Adding a new entity starts in the browser, where a JSP form collects user input. Bean Validation annotations on the entity fields (<code>@NotBlank</code>, <code>@Size</code>, <code>@Min</code>, <code>@Max</code>) are triggered the moment the controller receives the POST request. If validation fails, the controller re-renders the same form with error messages intact so the user can correct mistakes without losing what they typed.</p>
+
+<h3>Controller – handling form submission for a new book</h3>
+<pre><span class="ann">@PostMapping</span>(<span class="str">"/save"</span>)
+<span class="kw">public</span> String saveBook(<span class="ann">@Valid</span> <span class="ann">@ModelAttribute</span>(<span class="str">"book"</span>) <span class="tp">Book</span> book,
+                       <span class="tp">BindingResult</span> bindingResult,
+                       <span class="tp">Model</span> model,
+                       <span class="tp">RedirectAttributes</span> redirectAttrs) {
+
+    <span class="kw">if</span> (bindingResult.hasErrors()) {
+        model.addAttribute(<span class="str">"authors"</span>, authorService.getAllAuthors());
+        <span class="kw">return</span> <span class="str">"books/form"</span>;
+    }
+    <span class="kw">try</span> {
+        bookService.saveBook(book);
+        redirectAttrs.addFlashAttribute(<span class="str">"successMessage"</span>,
+            <span class="str">"Book '"</span> + book.getTitle() + <span class="str">"' added successfully!"</span>);
+    } <span class="kw">catch</span> (<span class="tp">DataIntegrityViolationException</span> | <span class="tp">IllegalArgumentException</span> e) {
+        model.addAttribute(<span class="str">"errorMessage"</span>, e.getMessage());
+        model.addAttribute(<span class="str">"authors"</span>, authorService.getAllAuthors());
+        <span class="kw">return</span> <span class="str">"books/form"</span>;
+    }
+    <span class="kw">return</span> <span class="str">"redirect:/books"</span>;
+}</pre>
+
+<h3>Service – business rules before persisting</h3>
+<pre><span class="kw">public</span> <span class="tp">Book</span> saveBook(<span class="tp">Book</span> book) {
+    <span class="cmt">// Guard: reject duplicate ISBNs before they hit the DB constraint</span>
+    Optional&lt;Book&gt; clash = bookRepository.findByIsbn(book.getIsbn());
+    <span class="kw">if</span> (clash.isPresent() && !clash.get().getId().equals(book.getId()))
+        <span class="kw">throw new</span> <span class="tp">DataIntegrityViolationException</span>(
+            <span class="str">"A book with ISBN '"</span> + book.getIsbn() + <span class="str">"' already exists."</span>);
+
+    <span class="cmt">// Verify the selected author actually exists in the DB</span>
+    <span class="tp">Author</span> author = authorRepository.findById(book.getAuthor().getId())
+        .orElseThrow(() -> <span class="kw">new</span> <span class="tp">IllegalArgumentException</span>(
+            <span class="str">"Author not found with id: "</span> + book.getAuthor().getId()));
+    book.setAuthor(author);
+
+    <span class="kw">return</span> bookRepository.save(book);
+}</pre>
+
+<h2>3.3 Read Operation</h2>
+<p>The primary listing page does not simply dump every book row independently. Instead, a custom JPQL query performs an <strong>INNER JOIN</strong> between <code>Book</code> and <code>Author</code>, projecting selected columns into a lightweight <code>BookAuthorDTO</code>. This strategy eliminates the N+1 query trap that would otherwise occur if Hibernate lazily fetched each book's author one at a time.</p>
+
+<h3>Repository – JPQL inner join returning a DTO</h3>
+<pre><span class="ann">@Query</span>(<span class="str">"SELECT new com.library.entity.BookAuthorDTO("</span> +
+       <span class="str">"b.id, b.title, b.isbn, b.publishedYear, b.genre, b.price, "</span> +
+       <span class="str">"a.id, a.name, a.nationality) "</span> +
+       <span class="str">"FROM Book b INNER JOIN b.author a "</span> +
+       <span class="str">"ORDER BY a.name, b.title"</span>)
+List&lt;<span class="tp">BookAuthorDTO</span>&gt; findAllBooksWithAuthorDetails();</pre>
+
+<p>The controller passes this DTO list to the JSP view, which iterates over it using JSTL's <code>&lt;c:forEach&gt;</code> tag to populate an HTML table showing title, author name, nationality, genre, year, and price in a single row.</p>
+
+<h3>Another inner-join query – filtering authors who have published at least one book</h3>
+<pre><span class="ann">@Query</span>(<span class="str">"SELECT DISTINCT a FROM Author a INNER JOIN a.books b WHERE SIZE(a.books) > 0"</span>)
+List&lt;<span class="tp">Author</span>&gt; findAuthorsWithBooks();</pre>
+
+<h2>3.4 Update Operation</h2>
+<p>Editing reuses the same JSP form as creation. When the user navigates to <code>/books/edit/{id}</code>, the controller fetches the existing record and binds it to the form model so every field arrives pre-filled. Upon submission, the service layer runs a secondary ISBN collision check—this time excluding the book's own ID—before overwriting the managed entity's fields and calling <code>save()</code>.</p>
+
+<pre><span class="kw">public</span> <span class="tp">Book</span> updateBook(Long id, <span class="tp">Book</span> updatedBook) {
+    <span class="tp">Book</span> existing = bookRepository.findById(id)
+        .orElseThrow(() -> <span class="kw">new</span> <span class="tp">IllegalArgumentException</span>(<span class="str">"Book not found"</span>));
+
+    <span class="cmt">// Make sure no OTHER book already owns this ISBN</span>
+    <span class="kw">if</span> (bookRepository.existsByIsbnAndIdNot(updatedBook.getIsbn(), id))
+        <span class="kw">throw new</span> <span class="tp">DataIntegrityViolationException</span>(
+            <span class="str">"Another book already has ISBN '"</span> + updatedBook.getIsbn() + <span class="str">"'."</span>);
+
+    existing.setTitle(updatedBook.getTitle());
+    existing.setIsbn(updatedBook.getIsbn());
+    existing.setPublishedYear(updatedBook.getPublishedYear());
+    existing.setGenre(updatedBook.getGenre());
+    existing.setPrice(updatedBook.getPrice());
+    existing.setAuthor(authorRepository.findById(
+        updatedBook.getAuthor().getId()).orElseThrow());
+
+    <span class="kw">return</span> bookRepository.save(existing);
+}</pre>
+
+<!-- ═══════════ 4. SYSTEM INTERFACE ═══════════ -->
+<h1>4. System Interface</h1>
+<p>The following screenshots demonstrate the functional web interface of the Library Management System, featuring a modern dark-navy aesthetic with glassmorphism effects and responsive layouts.</p>
+
+<div class="screenshot-grid">
+    <div class="screenshot-item">
+        <img src="screenshots/01_dashboard.png" alt="Dashboard">
+        <p>Dashboard with Live Statistics</p>
+    </div>
+    <div class="screenshot-item">
+        <img src="screenshots/02_books_list.png" alt="Books List">
+        <p>Interactive Books Catalogue (Inner Join View)</p>
+    </div>
+    <div class="screenshot-item">
+        <img src="screenshots/03_add_book.png" alt="Add Book">
+        <p>Secure Entity Creation Form</p>
+    </div>
+    <div class="screenshot-item">
+        <img src="screenshots/04_edit_book.png" alt="Edit Book">
+        <p>Edit Mode with Pre-filled Data</p>
+    </div>
+    <div class="screenshot-item">
+        <img src="screenshots/05_authors_list.png" alt="Authors List">
+        <p>Authors Directory</p>
+    </div>
+    <div class="screenshot-item">
+        <img src="screenshots/06_author_detail.png" alt="Author Detail">
+        <p>Detailed Author Profile & Bibliography</p>
+    </div>
+</div>
+
+<!-- ═══════════ 5. PROJECT STRUCTURE ═══════════ -->
+<h1>5. Project Structure</h1>
+<pre>
+library-app/
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/com/library/
+    │   │   ├── LibraryApplication.java        ← Boot entry point
+    │   │   ├── DataInitializer.java           ← Seeds 10+10 rows
+    │   │   ├── controller/
+    │   │   │   ├── HomeController.java        ← Dashboard stats
+    │   │   │   ├── BookController.java        ← Book CRUD endpoints
+    │   │   │   └── AuthorController.java      ← Author CRUD endpoints
+    │   │   ├── entity/
+    │   │   │   ├── Author.java                ← JPA entity (parent)
+    │   │   │   ├── Book.java                  ← JPA entity (child)
+    │   │   │   └── BookAuthorDTO.java         ← Join-query projection
+    │   │   ├── repository/
+    │   │   │   ├── AuthorRepository.java      ← JPA + custom JPQL
+    │   │   │   └── BookRepository.java        ← JPA + inner-join queries
+    │   │   └── service/
+    │   │       ├── AuthorService.java         ← Author business logic
+    │   │       └── BookService.java           ← Book business logic
+    │   ├── resources/
+    │   │   └── application.properties         ← H2 config, JSP resolver
+    │   └── webapp/WEB-INF/views/
+    │       ├── home.jsp                       ← Dashboard view
+    │       ├── style.css                      ← Global stylesheet
+    │       ├── books/  (list, form, detail)
+    │       └── authors/ (list, form, detail)
+    └── test/java/com/library/
+        ├── repository/
+        │   ├── AuthorRepositoryTest.java      ← Slice tests (@DataJpaTest)
+        │   └── BookRepositoryTest.java
+        └── service/
+            ├── AuthorServiceTest.java         ← Unit tests (Mockito)
+            └── BookServiceTest.java
+</pre>
+
+<!-- ═══════════ 6. TESTING ═══════════ -->
+<h1>6. Testing Strategy</h1>
+<p>The test suite is split into two complementary layers:</p>
+
+<h2>6.1 Repository Slice Tests</h2>
+<p>Annotated with <code>@DataJpaTest</code>, these tests spin up a minimal Spring context containing only the JPA infrastructure and an embedded H2 instance. They exercise derived query methods and custom JPQL queries against real SQL, catching issues that mocks would silently miss—such as malformed JPQL or incorrect column mappings.</p>
+
+<table>
+<thead><tr><th>Test Method</th><th>What It Verifies</th></tr></thead>
+<tbody>
+<tr><td>testFindByIsbn</td><td>Exact-match lookup by ISBN returns the correct book</td></tr>
+<tr><td>testFindByGenre</td><td>Genre filter returns only books of that category</td></tr>
+<tr><td>testFindAllBooksWithAuthorDetails</td><td>Inner-join DTO contains both Book and Author fields</td></tr>
+<tr><td>testFindAuthorsWithBooks</td><td>Only authors with ≥1 book appear in the result set</td></tr>
+<tr><td>testExistsByIsbnAndIdNot</td><td>Collision-detection query flags duplicate ISBNs correctly</td></tr>
+</tbody>
+</table>
+
+<h2>6.2 Service Unit Tests</h2>
+<p>These use <strong>Mockito</strong> to isolate business logic from the database. Repository dependencies are replaced with mock objects so each test runs in milliseconds and focuses purely on whether the service enforces its rules—like rejecting duplicate ISBNs or throwing when a referenced author does not exist.</p>
+
+<table>
+<thead><tr><th>Test Method</th><th>What It Verifies</th></tr></thead>
+<tbody>
+<tr><td>testSaveBook_DuplicateIsbn</td><td>DataIntegrityViolationException thrown, save() never called</td></tr>
+<tr><td>testSaveBook_AuthorNotFound</td><td>IllegalArgumentException when author ID is invalid</td></tr>
+<tr><td>testUpdateBook_Success</td><td>All fields updated, save() invoked exactly once</td></tr>
+<tr><td>testSaveAuthor_DuplicateName</td><td>Duplicate name guard fires before persistence</td></tr>
+<tr><td>testDeleteAuthor_NotFound</td><td>Deletion of non-existent record throws rather than silently no-ops</td></tr>
+</tbody>
+</table>
+
+<h3>Sample test – verifying the inner-join DTO query through the service</h3>
+<pre><span class="ann">@Test</span>
+<span class="ann">@DisplayName</span>(<span class="str">"getAllBooksWithAuthorDetails returns DTO list from inner-join query"</span>)
+<span class="kw">void</span> testGetAllBooksWithAuthorDetails() {
+    <span class="tp">BookAuthorDTO</span> dto = <span class="kw">new</span> BookAuthorDTO(
+        10L, <span class="str">"1984"</span>, <span class="str">"978-0-452-28423-4"</span>, 1949, <span class="str">"Dystopia"</span>, 12.99,
+        1L, <span class="str">"George Orwell"</span>, <span class="str">"British"</span>);
+    when(bookRepository.findAllBooksWithAuthorDetails())
+        .thenReturn(Arrays.asList(dto));
+
+    List&lt;BookAuthorDTO&gt; result = bookService.getAllBooksWithAuthorDetails();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getAuthorName()).isEqualTo(<span class="str">"George Orwell"</span>);
+}</pre>
+
+<!-- ═══════════ 7. CHALLENGES ═══════════ -->
+<h1>7. Challenges Encountered &amp; Solutions</h1>
+
+<table>
+<thead><tr><th>#</th><th>Problem</th><th>Root Cause</th><th>How I Fixed It</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Maven and JDK were not available on the development machine</td><td>Neither <code>mvn</code> nor <code>javac</code> was on the system PATH</td><td>Downloaded and configured JDK 17 and Maven 3.9.6 manually, then added both to the user PATH variable</td></tr>
+<tr><td>2</td><td>N+1 query issue on the "All Books" page</td><td>Hibernate fired a separate SELECT for each book's author because of lazy loading</td><td>Wrote a JPQL INNER JOIN query that projects into a flat <code>BookAuthorDTO</code>, fetching everything in one round-trip</td></tr>
+<tr><td>3</td><td>Duplicate ISBN inserts caused cryptic database exceptions</td><td>The raw <code>ConstraintViolationException</code> from H2 was not user-friendly</td><td>Added a pre-save check in <code>BookService.saveBook()</code> that throws a readable <code>DataIntegrityViolationException</code> before the DB is even hit</td></tr>
+<tr><td>4</td><td>Edit form overwriting a book's ISBN with another book's ISBN went undetected</td><td>The simple <code>findByIsbn</code> check also matched the book being edited itself</td><td>Created a custom query <code>existsByIsbnAndIdNot(isbn, id)</code> that excludes the current record from the collision check</td></tr>
+<tr><td>5</td><td>PowerShell brace expansion creating literal <code>{entity,repository}</code> folder names</td><td>PowerShell does not expand curly braces like Bash does</td><td>Removed the malformed directories and created each sub-package folder individually</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════ 8. GITHUB ═══════════ -->
+<h1>8. GitHub Repository</h1>
+<p><strong>Repository URL:</strong> <a href="https://github.com/vamshigurrala919/library-app.git">https://github.com/vamshigurrala919/library-app.git</a></p>
+
+<!-- ═══════════ 9. CONCLUSION ═══════════ -->
+<h1>9. Conclusion</h1>
+<p>Building this library catalogue from scratch reinforced several practical skills: structuring a layered Spring Boot application where each tier (controller → service → repository) has a clearly bounded responsibility; writing JPQL joins that avoid the lazy-loading N+1 trap; applying Bean Validation constraints at the entity level so error feedback is automatic; and designing a test suite that mixes integration slices for query correctness with Mockito-powered unit tests for business logic. The finished product handles all three required operations—populate, create/read, and update—while guarding against duplicate data through explicit pre-save checks.</p>
+
+<footer style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:12px">
+Library Management System – Spring Boot 3.2 · JPA · JSP · H2 &nbsp;|&nbsp; © 2024 Vamshi Gurrala
+</footer>
+
+</body>
+</html>

@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <title>${author.name} – LibraryMS</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/WEB-INF/views/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
 </head>
 <body>
 <nav class="navbar">
