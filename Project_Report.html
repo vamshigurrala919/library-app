@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Report – Library Management System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:#1a1a2e;background:#fff;line-height:1.7;padding:40px 60px;max-width:900px;margin:0 auto}
+h1{font-size:28px;color:#0f3460;border-bottom:3px solid #e94560;padding-bottom:10px;margin-bottom:25px}
+h2{font-size:20px;color:#0f3460;margin-top:35px;margin-bottom:12px;border-left:4px solid #e94560;padding-left:12px}
+h3{font-size:16px;color:#16213e;margin-top:20px;margin-bottom:8px}
+p,li{font-size:14px;margin-bottom:8px}
+ul{margin-left:20px;margin-bottom:12px}
+li{margin-bottom:4px}
+strong{color:#16213e}
+code{font-family:'Fira Code',monospace;background:#f0f0f5;padding:2px 6px;border-radius:4px;font-size:13px}
+pre{background:#1a1a2e;color:#e0e0e0;padding:16px 20px;border-radius:8px;overflow-x:auto;margin:12px 0 18px 0;font-size:12.5px;line-height:1.5}
+pre code{background:none;color:inherit;padding:0}
+.keyword{color:#c792ea}
+.annotation{color:#ffcb6b}
+.string{color:#c3e88d}
+.comment{color:#676e95;font-style:italic}
+.type{color:#82aaff}
+table{width:100%;border-collapse:collapse;margin:12px 0 18px 0;font-size:13px}
+th{background:#0f3460;color:#fff;padding:10px 14px;text-align:left}
+td{padding:8px 14px;border-bottom:1px solid #ddd}
+tr:hover td{background:#f7f7fb}
+.er-diagram{background:#f7f7fb;border:1px solid #ddd;border-radius:8px;padding:20px;margin:15px 0;text-align:center;font-family:'Fira Code',monospace;font-size:13px}
+.highlight-box{background:#fff3e0;border-left:4px solid #e94560;padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+.screenshot{width:100%;max-width:820px;border:1px solid #ddd;border-radius:8px;margin:12px 0 20px 0;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.screenshot-caption{font-size:12px;color:#666;text-align:center;margin:-12px 0 18px 0;font-style:italic}
+.section-divider{border:none;border-top:2px solid #eee;margin:30px 0}
+@media print{
+  body{padding:20px 30px;font-size:12px}
+  pre{font-size:11px;page-break-inside:avoid}
+  h2{page-break-before:auto}
+  h1{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<h1>&#128218; Project Report: Library Management System</h1>
+<p><strong>Technology Stack:</strong> Spring Boot 3.2 &bull; Spring Data JPA &bull; H2 Database &bull; JSP + JSTL &bull; Maven &bull; JUnit 5 + Mockito</p>
+
+<hr class="section-divider">
+
+<h2>1. Entity Relationship Design</h2>
+
+<p>The application manages two primary entities: <strong>Author</strong> and <strong>Book</strong>, connected through a <strong>One-to-Many</strong> relationship &mdash; one Author can write multiple Books, but each Book belongs to exactly one Author.</p>
+
+<div class="er-diagram">
+<pre style="background:#f7f7fb;color:#1a1a2e;text-align:left;display:inline-block">
+┌──────────────────────┐         ┌──────────────────────────┐
+│       AUTHORS        │         │          BOOKS           │
+├──────────────────────┤         ├──────────────────────────┤
+│ id (PK)       BIGINT │◄───┐    │ id (PK)          BIGINT  │
+│ name        VARCHAR  │    │    │ title          VARCHAR   │
+│ nationality VARCHAR  │    │    │ isbn (UNIQUE)  VARCHAR   │
+│ birth_year  INTEGER  │    └────│ author_id (FK) BIGINT    │
+│ bio         VARCHAR  │         │ published_year INTEGER   │
+└──────────────────────┘         │ genre          VARCHAR   │
+                                 │ price          DOUBLE    │
+    One Author ───────►          └──────────────────────────┘
+                         Many Books
+</pre>
+</div>
+
+<h3>Author Entity</h3>
+<ul>
+<li><strong>Attributes:</strong> <code>id</code> (PK), <code>name</code>, <code>nationality</code>, <code>birthYear</code>, <code>bio</code></li>
+<li><strong>Relationship:</strong> <code>@OneToMany(mappedBy = "author", cascade = CascadeType.ALL)</code></li>
+</ul>
+
+<h3>Book Entity</h3>
+<ul>
+<li><strong>Attributes:</strong> <code>id</code> (PK), <code>title</code>, <code>isbn</code> (Unique), <code>publishedYear</code>, <code>genre</code>, <code>price</code></li>
+<li><strong>Relationship:</strong> <code>@ManyToOne</code> with <code>@JoinColumn(name = "author_id")</code></li>
+</ul>
+
+<h3>Key JPA Annotations Used</h3>
+<table>
+<tr><th>Annotation</th><th>Purpose</th></tr>
+<tr><td><code>@Entity</code></td><td>Marks the class as a JPA entity</td></tr>
+<tr><td><code>@Id / @GeneratedValue</code></td><td>Primary key with auto-increment</td></tr>
+<tr><td><code>@OneToMany / @ManyToOne</code></td><td>Defines the relationship between Author and Book</td></tr>
+<tr><td><code>@JoinColumn</code></td><td>Specifies the FK column in the Book table</td></tr>
+<tr><td><code>@NotBlank / @NotNull</code></td><td>Bean validation constraints</td></tr>
+<tr><td><code>@UniqueConstraint</code></td><td>Enforces ISBN uniqueness at DB level</td></tr>
+</table>
+
+<hr class="section-divider">
+
+<h2>2. Implementation Details</h2>
+
+<h3>Project Structure</h3>
+<pre><code>library-app/
+├── pom.xml
+└── src/
+    ├── main/java/com/library/
+    │   ├── LibraryApplication.java
+    │   ├── DataInitializer.java
+    │   ├── entity/        (Author.java, Book.java, BookAuthorDTO.java)
+    │   ├── repository/    (AuthorRepository.java, BookRepository.java)
+    │   ├── service/       (AuthorService.java, BookService.java)
+    │   └── controller/    (HomeController.java, BookController.java, AuthorController.java)
+    ├── main/resources/
+    │   └── application.properties
+    ├── main/webapp/WEB-INF/views/
+    │   ├── home.jsp, style.css
+    │   ├── books/   (list.jsp, form.jsp, detail.jsp)
+    │   └── authors/ (list.jsp, form.jsp, detail.jsp)
+    └── test/java/com/library/
+        ├── repository/  (AuthorRepositoryTest.java, BookRepositoryTest.java)
+        └── service/     (AuthorServiceTest.java, BookServiceTest.java)</code></pre>
+
+<h3>A. Populate Database (DataInitializer.java)</h3>
+<p>The database is automatically populated on startup using a <code>CommandLineRunner</code> bean. It seeds <strong>10 Authors</strong> and <strong>10 Books</strong>.</p>
+
+<pre><code><span class="annotation">@Configuration</span>
+<span class="keyword">public class</span> <span class="type">DataInitializer</span> {
+
+    <span class="annotation">@Bean</span>
+    <span class="type">CommandLineRunner</span> initDatabase(<span class="type">AuthorRepository</span> authorRepo, <span class="type">BookRepository</span> bookRepo) {
+        <span class="keyword">return</span> args -> {
+            <span class="keyword">if</span> (authorRepo.count() > 0) <span class="keyword">return</span>;
+
+            <span class="comment">// 10 Authors</span>
+            Author orwell  = authorRepo.save(<span class="keyword">new</span> Author(<span class="string">"George Orwell"</span>, <span class="string">"British"</span>, 1903, <span class="string">"..."</span>));
+            Author tolkien = authorRepo.save(<span class="keyword">new</span> Author(<span class="string">"J.R.R. Tolkien"</span>, <span class="string">"British"</span>, 1892, <span class="string">"..."</span>));
+            <span class="comment">// ... 8 more authors ...</span>
+
+            <span class="comment">// 10 Books</span>
+            bookRepo.save(<span class="keyword">new</span> Book(<span class="string">"Nineteen Eighty-Four"</span>, <span class="string">"978-0-452-28423-4"</span>, 1949, <span class="string">"Dystopia"</span>, 12.99, orwell));
+            bookRepo.save(<span class="keyword">new</span> Book(<span class="string">"The Lord of the Rings"</span>, <span class="string">"978-0-618-64015-7"</span>, 1954, <span class="string">"Fantasy"</span>, 24.99, tolkien));
+            <span class="comment">// ... 8 more books ...</span>
+        };
+    }
+}</code></pre>
+
+<h3>B. Create Operation</h3>
+<p><strong>Controller</strong> (<code>BookController.java</code>): The <code>@PostMapping("/save")</code> method handles form submission with <code>@Valid</code> validation and <code>DataIntegrityViolationException</code> handling for duplicate ISBNs.</p>
+
+<pre><code><span class="annotation">@PostMapping</span>(<span class="string">"/save"</span>)
+<span class="keyword">public</span> String saveBook(<span class="annotation">@Valid</span> <span class="annotation">@ModelAttribute</span>(<span class="string">"book"</span>) Book book,
+                       BindingResult bindingResult, Model model,
+                       RedirectAttributes redirectAttrs) {
+    <span class="keyword">if</span> (bindingResult.hasErrors()) {
+        model.addAttribute(<span class="string">"authors"</span>, authorService.getAllAuthors());
+        <span class="keyword">return</span> <span class="string">"books/form"</span>;
+    }
+    <span class="keyword">try</span> {
+        bookService.saveBook(book);
+        redirectAttrs.addFlashAttribute(<span class="string">"successMessage"</span>, <span class="string">"Book added successfully!"</span>);
+    } <span class="keyword">catch</span> (DataIntegrityViolationException | IllegalArgumentException e) {
+        model.addAttribute(<span class="string">"errorMessage"</span>, e.getMessage());
+        <span class="keyword">return</span> <span class="string">"books/form"</span>;
+    }
+    <span class="keyword">return</span> <span class="string">"redirect:/books"</span>;
+}</code></pre>
+
+<p><strong>Service Layer Validation</strong> (<code>BookService.java</code>): Checks ISBN uniqueness and validates author existence before saving.</p>
+
+<pre><code><span class="keyword">public</span> Book saveBook(Book book) {
+    Optional&lt;Book&gt; existingIsbn = bookRepository.findByIsbn(book.getIsbn());
+    <span class="keyword">if</span> (existingIsbn.isPresent() && !existingIsbn.get().getId().equals(book.getId())) {
+        <span class="keyword">throw new</span> DataIntegrityViolationException(
+            <span class="string">"A book with ISBN '"</span> + book.getIsbn() + <span class="string">"' already exists."</span>);
+    }
+    Author author = authorRepository.findById(book.getAuthor().getId())
+        .orElseThrow(() -> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Author not found"</span>));
+    book.setAuthor(author);
+    <span class="keyword">return</span> bookRepository.save(book);
+}</code></pre>
+
+<p><strong>View</strong> (<code>books/form.jsp</code>): Uses Spring Form tags (<code>&lt;form:form&gt;</code>, <code>&lt;form:input&gt;</code>, <code>&lt;form:select&gt;</code>) for data binding and <code>&lt;form:errors&gt;</code> for inline validation messages.</p>
+
+<h3>C. Read Operation &ndash; Custom Inner Join Query</h3>
+
+<p><strong>Repository</strong> (<code>BookRepository.java</code>): Contains a custom JPQL <strong>INNER JOIN</strong> query returning a DTO with combined Book+Author data in a single query:</p>
+
+<pre><code><span class="annotation">@Query</span>(<span class="string">"SELECT new com.library.entity.BookAuthorDTO("</span> +
+       <span class="string">"b.id, b.title, b.isbn, b.publishedYear, b.genre, b.price, "</span> +
+       <span class="string">"a.id, a.name, a.nationality) "</span> +
+       <span class="string">"FROM Book b INNER JOIN b.author a "</span> +
+       <span class="string">"ORDER BY a.name, b.title"</span>)
+List&lt;BookAuthorDTO&gt; findAllBooksWithAuthorDetails();</code></pre>
+
+<div class="highlight-box">
+<strong>Why INNER JOIN?</strong> This query fetches Book and Author data together in one SQL statement, avoiding the N+1 select problem. Only books that have a valid author are returned.
+</div>
+
+<p><strong>View</strong> (<code>books/list.jsp</code>): Uses JSTL <code>&lt;c:forEach&gt;</code> to iterate and display results in a styled HTML table.</p>
+
+<h3>D. Update Operation</h3>
+
+<p><strong>Controller</strong>: <code>@GetMapping("/edit/{id}")</code> pre-fills the form; <code>@PostMapping("/update/{id}")</code> saves changes.</p>
+
+<pre><code><span class="annotation">@PostMapping</span>(<span class="string">"/update/{id}"</span>)
+<span class="keyword">public</span> String updateBook(<span class="annotation">@PathVariable</span> Long id,
+                         <span class="annotation">@Valid</span> <span class="annotation">@ModelAttribute</span>(<span class="string">"book"</span>) Book book,
+                         BindingResult bindingResult, Model model,
+                         RedirectAttributes redirectAttrs) {
+    <span class="keyword">if</span> (bindingResult.hasErrors()) {
+        model.addAttribute(<span class="string">"authors"</span>, authorService.getAllAuthors());
+        <span class="keyword">return</span> <span class="string">"books/form"</span>;
+    }
+    <span class="keyword">try</span> {
+        bookService.updateBook(id, book);
+        redirectAttrs.addFlashAttribute(<span class="string">"successMessage"</span>, <span class="string">"Book updated successfully!"</span>);
+    } <span class="keyword">catch</span> (DataIntegrityViolationException | IllegalArgumentException e) {
+        model.addAttribute(<span class="string">"errorMessage"</span>, e.getMessage());
+        <span class="keyword">return</span> <span class="string">"books/form"</span>;
+    }
+    <span class="keyword">return</span> <span class="string">"redirect:/books"</span>;
+}</code></pre>
+
+<p><strong>Service</strong>: The <code>updateBook()</code> method checks for ISBN collisions with other records using <code>existsByIsbnAndIdNot()</code> before applying updates.</p>
+
+<hr class="section-divider">
+
+<h2>3. Testing</h2>
+
+<p>Unit tests cover both <strong>Repository</strong> (integration tests with <code>@DataJpaTest</code>) and <strong>Service</strong> layers (unit tests with <code>@ExtendWith(MockitoExtension.class)</code>).</p>
+
+<table>
+<tr><th>Test Class</th><th># Tests</th><th>What It Covers</th></tr>
+<tr><td><code>AuthorRepositoryTest</code></td><td>4</td><td>findAll, findByNationality, findByNameIgnoreCase, findAuthorsWithBooks (inner join)</td></tr>
+<tr><td><code>BookRepositoryTest</code></td><td>7</td><td>findByIsbn, findByGenre, title search, findAllBooksWithAuthorDetails (inner join DTO), findBooksByAuthorId, ISBN collision check</td></tr>
+<tr><td><code>AuthorServiceTest</code></td><td>7</td><td>getAllAuthors, getById, save (success + duplicate), update (success + not found), delete</td></tr>
+<tr><td><code>BookServiceTest</code></td><td>8</td><td>getAllBooks, inner-join DTO, getById, save (success + duplicate ISBN + missing author), update (success + not found), getByGenre</td></tr>
+</table>
+
+<h3>Sample Test: Inner Join Query Verification</h3>
+<pre><code><span class="annotation">@Test</span>
+<span class="annotation">@DisplayName</span>(<span class="string">"findAllBooksWithAuthorDetails returns DTO with both Book and Author data"</span>)
+<span class="keyword">void</span> testFindAllBooksWithAuthorDetails() {
+    List&lt;BookAuthorDTO&gt; dtos = bookRepository.findAllBooksWithAuthorDetails();
+    assertThat(dtos).hasSizeGreaterThanOrEqualTo(2);
+    <span class="comment">// Every DTO must have an author name (proves INNER JOIN worked)</span>
+    dtos.forEach(dto -> assertThat(dto.getAuthorName()).isNotBlank());
+}</code></pre>
+
+<h3>Sample Test: Duplicate ISBN Exception</h3>
+<pre><code><span class="annotation">@Test</span>
+<span class="annotation">@DisplayName</span>(<span class="string">"saveBook throws DataIntegrityViolationException on duplicate ISBN"</span>)
+<span class="keyword">void</span> testSaveBook_DuplicateIsbn() {
+    Book duplicate = <span class="keyword">new</span> Book(<span class="string">"Another Book"</span>, <span class="string">"978-0-452-28423-4"</span>, 2000, <span class="string">"Fiction"</span>, 9.99, author);
+    when(bookRepository.findByIsbn(<span class="string">"978-0-452-28423-4"</span>)).thenReturn(Optional.of(existing));
+    assertThatThrownBy(() -> bookService.saveBook(duplicate))
+        .isInstanceOf(DataIntegrityViolationException.<span class="keyword">class</span>)
+        .hasMessageContaining(<span class="string">"978-0-452-28423-4"</span>);
+    verify(bookRepository, never()).save(any());
+}</code></pre>
+
+<hr class="section-divider">
+
+<h2>4. User Interface (CSS Styling)</h2>
+
+<p>All JSP pages share a unified <code>style.css</code> featuring:</p>
+<ul>
+<li><strong>Responsive navbar</strong> with brand styling and active-link highlighting</li>
+<li><strong>Dashboard</strong> with stat cards showing total Books and Authors</li>
+<li><strong>Data tables</strong> with hover effects, badges for genre/nationality</li>
+<li><strong>Forms</strong> with two-column grid layout, focus animations, and inline error messages</li>
+<li><strong>Detail views</strong> with grid-based attribute display</li>
+<li><strong>Color palette:</strong> Primary (#2c3e50), Accent (#e67e22), Success (#27ae60), Danger (#e74c3c)</li>
+</ul>
+
+<img src="screenshots/dashboard.png" alt="Dashboard" class="screenshot">
+<p class="screenshot-caption">Figure 5: Library Dashboard with stat cards and books table</p>
+<img src="screenshots/books_list.png" alt="Books List" class="screenshot">
+<p class="screenshot-caption">Figure 6: Books List page with INNER JOIN data</p>
+<img src="screenshots/authors_list.png" alt="Authors List" class="screenshot">
+<p class="screenshot-caption">Figure 7: Authors List page showing book counts per author</p>
+<img src="screenshots/author_detail.png" alt="Author Detail" class="screenshot">
+<p class="screenshot-caption">Figure 8: Author Detail page showing biography and associated books</p>
+
+<hr class="section-divider">
+
+<h2>5. Challenges Faced and How I Overcame Them</h2>
+
+<h3>Challenge 1: JDK vs JRE Compilation Error</h3>
+<ul>
+<li><strong>Problem:</strong> Maven build failed with <em>"No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?"</em></li>
+<li><strong>Cause:</strong> The system had Java 1.8 JRE installed, but Spring Boot 3.2 requires JDK 17+.</li>
+<li><strong>Solution:</strong> Downloaded Microsoft OpenJDK 17, configured <code>JAVA_HOME</code> and added <code>bin</code> to PATH. Also generated a Maven Wrapper (<code>mvnw</code>) to make the project self-contained.</li>
+</ul>
+
+<h3>Challenge 2: PowerShell Brace Expansion</h3>
+<ul>
+<li><strong>Problem:</strong> Running <code>mkdir {entity,repository,service,controller}</code> in PowerShell created a single folder literally named <code>{entity,repository,service,controller}</code> instead of four separate folders.</li>
+<li><strong>Cause:</strong> PowerShell doesn't support Bash-style brace expansion.</li>
+<li><strong>Solution:</strong> Removed the rogue directories with <code>Remove-Item -LiteralPath</code> and verified the correct package structure was intact using <code>tree /F</code>.</li>
+</ul>
+
+<h3>Challenge 3: N+1 Query Problem</h3>
+<ul>
+<li><strong>Problem:</strong> Loading Books and their Authors lazily caused N+1 SELECT queries &mdash; one for all books, then one per book to fetch the author.</li>
+<li><strong>Solution:</strong> Wrote a custom JPQL INNER JOIN query in <code>BookRepository</code> that maps results directly into a <code>BookAuthorDTO</code>, fetching all data in a single optimized SQL statement.</li>
+</ul>
+
+<hr class="section-divider">
+
+<h2>6. GitHub URL</h2>
+
+<div class="highlight-box">
+<strong>GitHub Repository:</strong> <a href="https://github.com/vamshigurrala919/library-app.git">https://github.com/vamshigurrala919/library-app.git</a>
+</div>
+
+<hr class="section-divider">
+<p style="text-align:center;color:#888;font-size:12px;margin-top:30px">&copy; 2024 Library Management System &ndash; Spring Boot Project Report</p>
+
+</body>
+</html>
